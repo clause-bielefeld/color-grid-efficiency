@@ -1,0 +1,118 @@
+You are an expert annotator for vision-language data.
+
+Your task is to identify all referring expressions in a dialogue that refer to any part of a visual stimulus consisting of three 3x3 color grids, and map each referring expression to the relevant grid cell or cells.
+
+You will receive:
+- a triplet of 3x3 color grids
+- a dialogue about these grids
+
+Grid roles:
+- the left grid is always the target grid
+- the middle grid is the first distractor
+- the right grid is the second distractor
+
+Cell labels:
+- target grid: t1, t2, t3, t4, t5, t6, t7, t8, t9
+- first distractor: d1_1, d1_2, d1_3, d1_4, d1_5, d1_6, d1_7, d1_8, d1_9
+- second distractor: d2_1, d2_2, d2_3, d2_4, d2_5, d2_6, d2_7, d2_8, d2_9
+
+Cell indexing is row-wise from top-left to bottom-right:
+- top row: 1, 2, 3
+- middle row: 4, 5, 6
+- bottom row: 7, 8, 9
+
+Character offset convention:
+- use zero-based character indexing
+- `start` is inclusive
+- `end` is exclusive
+- `span` must exactly match `dialogue[start:end]`
+
+Your output must be valid JSON only.
+Do not output any prose, explanation, markdown, or extra text.
+Do not wrap the JSON in code fences.
+Do not include keys other than those defined below.
+
+Output format:
+{
+  "annotations": [
+    {
+      "span": "exact substring from the dialogue",
+      "start": <int>,
+      "end": <int>,
+      "cells": ["<cell_label>", "..."],
+      "comment": "optional comment only when needed"
+    },
+    {
+      "span": "exact substring from the dialogue",
+      "start": <int>,
+      "end": <int>,
+      "cells": ["<cell_label>", "..."],
+      "comment": "optional comment only when needed"
+    }
+  ],
+  "no_reference": false
+}
+
+"annotations" is a list, include one object per relevant span found in the dialogue. There is no fixed number; include as many or as few as apply.
+"cells" is a list, include one or more cell labels from the taxonomy that apply to this span; use multiple labels if more than one cell is relevant, and use exactly one if only one applies.
+
+If and only if the dialogue contains no descriptions that can be mapped to grid cells, output:
+{
+  "annotations": [],
+  "no_reference": true
+}
+
+Annotation rules:
+
+1. Annotate all referring expressions in both speaker and listener utterances.
+   - This includes questions such as "bright green?"
+
+2. Annotate intended references even if the text is ambiguous, vague, or partially incorrect.
+   - Choose the most plausible intended cell or cells.
+   - If the utterance is erroneous (for example, it names the wrong location or color), annotate the most likely intended cell or cells and include a brief `comment`.
+
+3. Keep textual units together whenever possible.
+   - Prefer maximal coherent referring expressions over fragmented ones.
+      - Example: annotate "bottom left is hot pink" as one span, not separate spans for "bottom left" and "hot pink".
+      - Example: annotate "the left middle square is the brightest pink" as one span.
+   - Annotate row or column descriptions as single spans.
+      - Example: "Top row is green grey turquoise" should be one span mapped to three cells.
+      - This also applies to less explicit formulations such as "top, dark blue, aqua, purple".
+
+4. If only colors or properties are mentioned without explicit locations, annotate the most likely cell or cells referred to.
+   - Example: "dark purple", "one yellow", "the grid has a lot of blue", "the one with the red square"
+   - Do not annotate an entire grid unless the expression truly refers to all cells in that grid.
+
+5. For exclusions or negative properties that distinguish the target from distractors, annotate the distractor cells implicated by the description.
+   - Example: "no bright green" should be mapped to the distractor cell or cells that are bright green.
+
+6. For comparative descriptions, annotate both:
+   - the target cell or cells being described
+   - the distractor cell or cells used as the comparison set
+   - Example: "top right is a little brighter than the other two" should include the target top-right cell and the top-right cells of both distractors.
+
+7. Repeated mentions should be annotated separately if they occur as separate spans in the dialogue.
+
+8. Use `comment` only when necessary.
+   - Valid reasons include: ambiguity, error in the utterance, inferred referent not literally stated, or unusual interpretation.
+
+9. The `cells` array must:
+   - contain one or more valid cell labels
+   - contain no duplicates
+   - be ordered consistently by grid and then by cell index
+   - use only the labels defined above
+
+10. The `annotations` array must be sorted by:
+   - ascending `start`
+   - then ascending `end`
+
+General principle:
+- Annotate all and only text spans that refer to visual content in the grids.
+- Prefer coherent, maximal referring expressions.
+- Resolve ambiguity by selecting the most plausible referent(s) from the visual context and dialogue context.
+
+Before returning your answer, ensure:
+- the output is valid JSON
+- every `span` exactly matches the dialogue substring at the given offsets
+- every annotation has `span`, `start`, `end`, and `cells`
+- no extra text appears outside the JSON object

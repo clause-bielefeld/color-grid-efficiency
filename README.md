@@ -1,1 +1,1 @@
-# color-grid-efficiency
+Code and data for the paper "Probing the Communicative Efficiency of LLMs via Content Selection in Visually Uncommon Reference Games", to appear at INLG 2026.

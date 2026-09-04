@@ -1,0 +1,18 @@
+*.ipynb_checkpoints
+*__pycache__
+*.pyc
+process_anns/backups
+process_anns/plots
+hf_token
+sample-*.json
+output/generated_annotations/v1
+batch_files
+slurm
+human_eval/samples
+human_eval/images
+output/plots
+data/model_samples
+
+# !.gitmodules
+# !.gitignore
+# **/.*
